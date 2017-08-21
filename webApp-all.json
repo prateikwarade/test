@@ -1,0 +1,259 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "skuCode": {
+            "type": "string",
+            "metadata": {
+                "description": "App Service Plan SKU code"
+            }
+        },
+        "workerCount": {
+            "type": "int",
+            "metadata": {
+                "description": "Number of App Service Plan instances to deploy"
+            }
+        },
+        "webAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the webApp to deploy"
+            }
+        },
+        "lowCPU": {
+            "type": "String",
+            "metadata": {
+                "description": "Name for alert for webTest"
+            },
+            "defaultValue": "None"
+        },
+        "highCPU": {
+            "type": "String",
+            "metadata": {
+                "description": "Name for alert for webTest"
+            },
+            "defaultValue": "None"
+        },
+        "email": {
+            "type": "string",
+            "metadata": {
+                "description": "Where to email alerts"
+            }
+        },
+        "appInsights": {
+            "type": "string",
+            "defaultValue": "appInsightsFalse",
+            "allowedValues": [
+                "appInsightsFalse",
+                "appInsightsTrue"
+            ],
+            "metadata": {
+                "description": "Do we deploy appInsights?"
+            }
+        },
+        "autoScale": {
+            "type": "string",
+            "defaultValue": "autoScaleFalse",
+            "allowedValues": [
+                "autoScaleFalse",
+                "autoScaleTrue"
+            ],
+            "metadata": {
+                "description": "Do we deploy autoScale?"
+            }
+        },
+        "webTests": {
+            "type": "string",
+            "defaultValue": "webTestsFalse",
+            "allowedValues": [
+                "webTestsFalse",
+                "webTestsTrue"
+            ],
+            "metadata": {
+                "description": "Do we deploy webTests?"
+            }
+        },
+        "metricAlert": {
+            "type": "string",
+            "defaultValue": "metricAlertFalse",
+            "allowedValues": [
+                "metricAlertFalse",
+                "metricAlertTrue"
+            ],
+            "metadata": {
+                "description": "Do we deploy metricAlert?"
+            }
+        },
+        "ASE": {
+             "type": "string",
+            "defaultValue": "appserv-defaultname"
+        }
+        
+    },
+    "variables": {
+        "hostingPlanName": "[concat('plan-', parameters('webAppName'))]",
+        "False": "https://raw.githubusercontent.com/4c74356b41/armotron/master/temp/webApp-blank.json",
+        "appInsightsFalse": "[variables('False')]",
+        "appInsightsTrue": "https://raw.githubusercontent.com/4c74356b41/armotron/master/temp/webApp-appInsights.json",
+        "appInsights": "[variables(parameters('appInsights'))]",
+        "autoScaleFalse": "[variables('False')]",
+        "autoScaleTrue": "https://raw.githubusercontent.com/4c74356b41/armotron/master/temp/webApp-autoScale.json",
+        "autoScale": "[variables(parameters('autoScale'))]",
+        "webTestsFalse": "[variables('False')]",
+        "webTestsTrue": "https://raw.githubusercontent.com/4c74356b41/armotron/master/temp/webApp-webTests.json",
+        "webTests": "[variables(parameters('webTests'))]",
+        "metricAlertFalse": "[variables('False')]",
+        "metricAlertTrue": "https://raw.githubusercontent.com/4c74356b41/armotron/master/temp/webApp-metricAlert.json",
+        "metricAlert": "[variables(parameters('metricAlert'))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2016-03-01",
+            "name": "[parameters('webAppName')]",
+            "type": "Microsoft.Web/sites",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[parameters('webAppName')]",
+                "serverFarmId": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
+                "hostingEnvironment": "[parameters('ASE')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2016-03-01",
+            "name": "[variables('hostingPlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "HostingPlan"
+            },
+            "sku": {
+                "name": "[parameters('skuCode')]",
+                "capacity": "[parameters('workerCount')]"
+            },
+            "properties": {
+                "name": "[variables('hostingPlanName')]",
+                "numberOfWorkers": "[parameters('workerCount')]"
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "appInsightsDeploy",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('appInsights')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "webAppName": {
+                        "value": "[parameters('webAppName')]"
+                    },
+                    "email": {
+                        "value": "[parameters('email')]"
+                    },
+                    "lowCPU": {
+                        "value": "[parameters('lowCPU')]"
+                    },
+                    "highCPU": {
+                        "value": "[parameters('highCPU')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "autoscaleDeploy",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('autoScale')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "webAppName": {
+                        "value": "[parameters('webAppName')]"
+                    },
+                    "email": {
+                        "value": "[parameters('email')]"
+                    },
+                    "lowCPU": {
+                        "value": "[parameters('lowCPU')]"
+                    },
+                    "highCPU": {
+                        "value": "[parameters('highCPU')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "webTestsDeploy",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]",
+                "appInsightsDeploy"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('webTests')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "webAppName": {
+                        "value": "[parameters('webAppName')]"
+                    },
+                    "email": {
+                        "value": "[parameters('email')]"
+                    },
+                    "lowCPU": {
+                        "value": "[parameters('lowCPU')]"
+                    },
+                    "highCPU": {
+                        "value": "[parameters('highCPU')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-01-01",
+            "name": "metricAlertDeploy",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('metricAlert')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "webAppName": {
+                        "value": "[parameters('webAppName')]"
+                    },
+                    "lowCPU": {
+                        "value": "[parameters('lowCPU')]"
+                    },
+                    "highCPU": {
+                        "value": "[parameters('highCPU')]"
+                    },
+                    "email": {
+                        "value": "[parameters('email')]"
+                    }
+                }
+            }
+        }
+    ]
+}

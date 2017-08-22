@@ -136,7 +136,7 @@
       },
       "properties": {
         "name":"[variables('hostingPlanName')]",
-        "sku": "[parameters('skuCode')]",
+        "sku": "Isolated",
         
         "numberOfWorkers": 1,
         "hostingEnvironment": "[parameters('AppServiceEnvName')]",

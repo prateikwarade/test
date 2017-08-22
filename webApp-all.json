@@ -84,8 +84,8 @@
                 "description": "Do we deploy metricAlert?"
             }
         },
-        "ASE": {
-             "type": "string",
+        "AppServiceEnvName": {
+            "type": "string",
             "defaultValue": "appserv-defaultname"
         }
         
@@ -115,7 +115,7 @@
             "properties": {
                 "name": "[parameters('webAppName')]",
                 "serverFarmId": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
-                "hostingEnvironment": "[parameters('ASE')]"
+                "hostingEnvironment": "[parameters('AppServiceEnvName')]"
             },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"

@@ -9,7 +9,8 @@
             }
         },
         "workerCount": {
-            "type": "int",
+            "type": "string",
+            "defaultValue": "2",
             "metadata": {
                 "description": "Number of App Service Plan instances to deploy"
             }
